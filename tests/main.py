@@ -1,7 +1,8 @@
 import unittest
+import models
 
 
-class MyTestCase(unittest.TestCase):
+class MainTestCase(unittest.TestCase):
     def test_something(self):
         self.assertEqual(True, False)
 
