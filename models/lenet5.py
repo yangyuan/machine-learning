@@ -5,50 +5,46 @@ from .base import BaseModel
 
 
 class LeNet5(BaseModel):
-    def __init__(self, train_data, train_labels,
-                 test_data, test_labels,
-                 validation_data=None, validation_labels=None,
-                 mean=0, stddev=0.3, learning_rate=0.001):
-
+    def __init__(self, _num_labels=10, initializer_mean=0, initializer_stddev=0.3, learning_rate=0.001):
         super().__init__('LeNet-5')
 
-        self.train_data = train_data
-        self.train_labels = train_labels
-        assert (len(self.train_labels) == len(self.train_data))
-        assert (self.train_data[0].shape[0] == 32 and self.train_data[0].shape[1] == 32)
+        self.parameters['mean'] = initializer_mean
+        self.parameters['stddev'] = initializer_stddev
 
-        self.validation_data = validation_data
-        self.validation_labels = validation_labels
-        assert (len(self.validation_labels) == len(self.validation_data))
-        assert (self.validation_data[0].shape[0] == 32 and self.validation_data[0].shape[1] == 32)
+        self.specification['shape_input'] = (32, 32, 1)
+        self.specification['shape_output'] = (_num_labels,)
 
-        self.test_data = test_data
-        self.test_labels = test_labels
-        assert (len(self.test_data) == len(self.test_labels))
-        assert (self.test_data[0].shape[0] == 32 and self.test_data[0].shape[1] == 32)
+        x = tf.placeholder(tf.float32, shape=(None,) + self.specification['shape_input'])
+        self.y = tf.placeholder(tf.int32, shape=(None,) + self.specification['shape_output'])
 
-        self.num_outputs = 10
+        # C1
+        # In: (32, 32, 1), Out: (28, 28, 6)
+        c1_kernel = tf.Variable(
+            tf.truncated_normal(
+                shape=[5, 5, 1, 6],
+                mean=self.parameters['mean'], stddev=self.parameters['std']))
+        c1_bias = tf.get_variable(
+            shape=[6],
+            initializer=tf.random_normal_initializer(stddev=self.parameters['std']))
+        c1 = tf.nn.conv2d(x, c1_kernel, [1, 1, 1, 1], padding='VALID') + c1_bias
 
-        self.X = tf.placeholder(tf.float32, shape=(None, 32, 32, 1))
-        self.y = tf.placeholder(tf.int32, shape=(None, self.num_outputs))
-
-        self.mu = mean
-        self.sigma = stddev
-
-        # Layer 1: Input 32x32x1, Output 28x28x6
-        self.conv1_kernels = tf.Variable(tf.truncated_normal(shape=[5, 5, 1, 6], mean=self.mu, stddev=self.sigma))
-        self.conv1_biases = tf.get_variable(name="conv1_biases", shape=[6],
-                                            initializer=tf.random_normal_initializer(stddev=0.3))
-        self.conv1 = tf.nn.conv2d(self.X, self.conv1_kernels, [1, 1, 1, 1], padding='VALID') + self.conv1_biases
-        # Pooling -> from 28x28 to 14x14
-        self.pool1 = tf.nn.max_pool(self.conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
-        # Activation
-        self.conv1 = tf.nn.relu(self.pool1)
+        # S1
+        # In: (28, 28, 6), Out: (14, 14, 6)
+        s2 = tf.nn.avg_pool(c1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
+        s2_coefficient = tf.get_variable(
+            shape=[6],
+            initializer=tf.random_normal_initializer(stddev=self.parameters['std']))
+        s2_bias = tf.get_variable(
+            shape=[6],
+            initializer=tf.random_normal_initializer(stddev=self.parameters['std']))
+        s2 = tf.nn.tanh(s2 * s2_coefficient + s2_bias)
 
         # Layer 2: Input 14x14x6, Output 10x10x16
-        self.conv2_kernels = tf.Variable(tf.truncated_normal(shape=[5, 5, 6, 16], mean=self.mu, stddev=self.sigma))
-        self.conv2_biases = tf.get_variable(name="conv2_biases", shape=[16],
-                                            initializer=tf.random_normal_initializer(stddev=self.sigma))
+        self.conv2_kernels = tf.Variable(
+            tf.truncated_normal(shape=[5, 5, 6, 16], mean=self.parameters['mean'], stddev=self.parameters['std']))
+        self.conv2_biases = tf.get_variable(
+            shape=[16],
+            initializer=tf.random_normal_initializer(stddev=self.parameters['stddev']))
         self.conv2 = tf.nn.conv2d(self.conv1, self.conv2_kernels, [1, 1, 1, 1], padding='VALID') + self.conv2_biases
         # Pooling -> from 10x10x16 to 5x5x16
         self.pool2 = tf.nn.max_pool(self.conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
@@ -59,25 +55,33 @@ class LeNet5(BaseModel):
         self.flattened = flatten(self.conv2)
 
         # Fully Connected Layer n.1
-        self.fcl1_weights = tf.Variable(tf.truncated_normal(shape=[400, 120], mean=self.mu, stddev=self.sigma))
-        self.fcl1_biases = tf.get_variable(name="fc1_biases", shape=[120],
-                                           initializer=tf.random_normal_initializer(stddev=self.sigma))
+        self.fcl1_weights = tf.Variable(
+            tf.truncated_normal(
+                shape=[400, 120],
+                mean=self.parameters['mean'],
+                stddev=self.parameters['stddev']))
+        self.fcl1_biases = tf.get_variable(
+            shape=[120],
+            initializer=tf.random_normal_initializer(stddev=self.parameters['stddev']))
         self.fcl1 = tf.matmul(self.flattened, self.fcl1_weights) + self.fcl1_biases
         # Activation 3
         self.fcl1 = tf.nn.relu(self.fcl1)
 
         # Fully Connected Layer n.2
-        self.fcl2_weights = tf.Variable(tf.truncated_normal(shape=[120, 84], mean=self.mu, stddev=self.sigma))
+        self.fcl2_weights = tf.Variable(
+            tf.truncated_normal(shape=[120, 84], mean=self.parameters['mean'], stddev=self.parameters['stddev']))
         self.fcl2_biases = tf.get_variable(name="fc2_biases", shape=[84],
-                                           initializer=tf.random_normal_initializer(stddev=self.sigma))
+                                           initializer=tf.random_normal_initializer(stddev=self.parameters['stddev']))
         self.fcl2 = tf.matmul(self.fcl1, self.fcl2_weights) + self.fcl2_biases
         # Activation 4
         self.fcl2 = tf.nn.relu(self.fcl2)
 
         # Fully Connected Layer n.3
-        self.fcl3_weights = tf.Variable(tf.truncated_normal(shape=[84, 10], mean=self.mu, stddev=self.sigma))
-        self.fcl3_biases = tf.get_variable(name="fc3_biases", shape=[10],
-                                           initializer=tf.random_normal_initializer(stddev=self.sigma))
+        self.fcl3_weights = tf.Variable(
+            tf.truncated_normal(shape=[84, 10], mean=self.parameters['mean'], stddev=self.parameters['stddev']))
+        self.fcl3_biases = tf.get_variable(
+            shape=[10],
+            initializer=tf.random_normal_initializer(stddev=self.parameters['stddev']))
         self.logits = tf.matmul(self.fcl2, self.fcl3_weights) + self.fcl3_biases
 
         # Loss and metrics
@@ -89,7 +93,6 @@ class LeNet5(BaseModel):
         self.correct_prediction = tf.equal(tf.argmax(self.logits, 1), tf.argmax(self.y, 1))
         self.accuracy_operation = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
         self.saver = tf.train.Saver()
-
 
     def train(self, epochs, batch_size, auto_save=True):
         assert (epochs > 0 and batch_size > 0)

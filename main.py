@@ -10,7 +10,7 @@ X_validation, y_validation = mnist.validation.images, mnist.validation.labels
 X_test, y_test = mnist.test.images, mnist.test.labels
 
 
-mnist_data = OneHotData('mnist',
+mnist_data = OneHotData('mnist', 10,
                         mnist.train.images,
                         mnist.train.labels,
                         mnist.validation.images,
