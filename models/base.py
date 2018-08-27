@@ -46,6 +46,12 @@ class OneHotData(BaseData):
         assert (n == _num_labels)
         assert (_training_x.shape[0] == m)
 
-        print(_training_x.shape)
-        print(_training_y.shape)
-        exit()
+        self.training_x = _training_x
+        self.training_y = _training_y
+
+        self.validation_x = _validation_x
+        self.validation_y = _validation_y
+
+        self.test_x = _test_x
+        self.test_y = _test_y
+
