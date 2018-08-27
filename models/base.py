@@ -1,4 +1,5 @@
-
+import datetime
+import tensorflow as tf
 
 class BaseModel:
     def __init__(self, _name):
@@ -19,6 +20,9 @@ class BaseData:
 
         self.test_x = None
         self.test_y = None
+
+    def get_training(self):
+        return tf.data.Dataset.from_tensor_slices((self.training_x, self.training_y))
 
     def validate_shape(self, _shape_x, _shape_y):
         if len(_shape_x) != len(self.training_x.shape)\
@@ -55,3 +59,8 @@ class OneHotData(BaseData):
         self.test_x = _test_x
         self.test_y = _test_y
 
+
+class Logger:
+    @staticmethod
+    def log(string):
+        print('%s %s' % (datetime.datetime.now(), string))

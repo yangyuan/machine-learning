@@ -3,7 +3,7 @@ import numpy as np
 from models.lenet5 import LeNet5
 from models.base import OneHotData
 
-mnist = input_data.read_data_sets("MNIST_data/", reshape=False, one_hot=True)
+mnist = input_data.read_data_sets("data/raw/mnist", reshape=False, one_hot=True)
 
 X_train, y_train = mnist.train.images, mnist.train.labels
 X_validation, y_validation = mnist.validation.images, mnist.validation.labels
