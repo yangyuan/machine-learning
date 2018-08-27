@@ -137,7 +137,7 @@ class LeNet5(BaseModel):
         sess = tf.get_default_session()
         for offset in range(0, num_examples, batch_size):
             batch_x, batch_y = X_data[offset:offset + batch_size], y_data[offset:offset + batch_size]
-            accuracy = sess.run(self.accuracy_operation, feed_dict={self.X: batch_x, self.y: batch_y})
+            accuracy = sess.run(self.accuracy_operation, feed_dict={self.x: batch_x, self.y: batch_y})
             total_accuracy += (accuracy * len(batch_x))
         return total_accuracy / num_examples
 
