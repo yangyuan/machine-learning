@@ -1,6 +1,7 @@
 import datetime
 import tensorflow as tf
 
+
 class BaseModel:
     def __init__(self, _name):
         self.name = _name
