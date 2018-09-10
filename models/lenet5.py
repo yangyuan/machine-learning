@@ -124,10 +124,15 @@ class LeNet5(BaseModel):
 
         Logger.log('Training the model . . .')
 
+        dataset = data.get_training()
+        dataset = dataset.shuffle(buffer_size=batch_size*8)
+        dataset = dataset.batch(batch_size)
+
         with tf.Session() as session:
             session.run(tf.global_variables_initializer())
             for epoch in range(epochs):
 
+                """
                 train_data, train_labels = data.training_x, data.training_y
                 xxxxxxxx = int(num_examples/batch_size)
                 i = 0
@@ -141,20 +146,16 @@ class LeNet5(BaseModel):
                     print(i, xxxxxxxx, acc)
 
                 """
-                dataset = data.get_training().shuffle(batch_size*16).repeat().batch(batch_size)
+                num_batches = int((num_examples-1)/batch_size) + 1
+
                 iterator = dataset.make_one_shot_iterator()
                 next_element = iterator.get_next()
-
-                xxxxxxxx = int(num_examples/batch_size)
-
-                for i in range(int(num_examples/batch_size)):
+                for i in range(num_batches):
                     _x, _y = session.run(next_element)
+
                     _, acc, cross = session.run([self.training_step, self.accuracy_operation, self.cross_entropy],
                                                 feed_dict={self.x: _x, self.y: _y})
-                    print(i, xxxxxxxx, acc)
-                    
-                    
-                """
+                    print(i, num_batches, acc)
 
                 validation_accuracy = self.evaluate(data.validation_x, data.validation_y, batch_size)
                 Logger.log("Epoch {} - validation accuracy {:.3f} ".format(epoch + 1, validation_accuracy))

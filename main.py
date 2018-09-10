@@ -27,5 +27,5 @@ print("Test Set:       {} samples".format(len(X_test)))
 print("New Input shape: {}".format(X_train[0].shape))
 
 lenet_network = LeNet5()
-accuracy = lenet_network.train(mnist_data, epochs=10, batch_size=100)
+accuracy = lenet_network.train(mnist_data, epochs=10, batch_size=101)
 print("Accuracy on test set: {:.3f}".format(accuracy))
