@@ -1,5 +1,5 @@
 import tensorflow as tf
-from .base import BaseModel, Logger
+from .base import BaseModel, Logger, MinBatch
 
 
 class LeNet5(BaseModel):
@@ -117,7 +117,15 @@ class LeNet5(BaseModel):
         self.accuracy_operation = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
         self.saver = tf.train.Saver()
 
+    def common_train(self, data, epochs, batch_size, session):
+        for x, y in MinBatch((data.training_x, data.training_y), batch_size):
+            print(x.shape)
+            print(y.shape)
+
+
     def train(self, data, epochs, batch_size, auto_save=True):
+        self.common_train(data, epochs, batch_size, None)
+
         assert (epochs > 0 and batch_size > 0)
 
         num_examples = len(data.training_x)
@@ -133,7 +141,15 @@ class LeNet5(BaseModel):
         with tf.Session() as session:
             session.run(tf.global_variables_initializer())
             for epoch in range(epochs):
+                num_batches = int((num_examples-1)/batch_size) + 1
+                i = 0
+                for x_batch, y_batch in MinBatch((data.training_x, data.training_y), batch_size):
+                    i += 1
+                    _, acc, cross = session.run([self.training_step, self.accuracy_operation, self.cross_entropy],
+                                                feed_dict={self.x: x_batch, self.y: y_batch})
+                    print(i, num_batches, acc)
 
+                """
                 train_data, train_labels = data.training_x, data.training_y
                 num_batches = int((num_examples-1)/batch_size) + 1
                 i = 0
@@ -146,7 +162,6 @@ class LeNet5(BaseModel):
                                                 feed_dict={self.x: x_batch, self.y: y_batch})
                     print(i, num_batches, acc)
 
-                """
                 num_batches = int((num_examples-1)/batch_size) + 1
 
                 iterator = dataset.make_one_shot_iterator()

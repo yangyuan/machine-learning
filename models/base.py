@@ -1,5 +1,6 @@
 import datetime
 import tensorflow as tf
+import numpy as np
 
 
 class BaseModel:
@@ -7,6 +8,31 @@ class BaseModel:
         self.name = _name
         self.parameters = dict()
         self.specification = dict()
+
+
+class MinBatch:
+    def __init__(self, tensors, batch_size):
+        self.n = tensors[0].shape[0]
+        self.batch_size = batch_size
+        self.tensors = tensors
+        self.indexes = np.arange(self.n)
+        np.random.shuffle(self.indexes)
+        self.offset = 0
+
+    def __iter__(self):
+        # Iterators are iterables too.
+        # Adding this functions to make them so.
+        return self
+
+    def __next__(self):
+        if self.offset < self.n:
+            offset = self.offset
+            self.offset += self.batch_size
+            max_offset = min(self.n, self.offset)
+            indexes = self.indexes[offset:max_offset]
+            return (x[indexes] for x in self.tensors)
+        else:
+            raise StopIteration()
 
 
 class BaseData:
